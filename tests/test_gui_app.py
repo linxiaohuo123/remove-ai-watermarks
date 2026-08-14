@@ -356,14 +356,14 @@ def test_close_during_first_file_completes_current_and_cancels_rest(
 
 
 @pytest.mark.skipif(
-    sys.platform == "linux",
-    reason="dedup relies on case-insensitive filesystem semantics (normcase is a no-op on POSIX)",
+    sys.platform != "win32",
+    reason="case-collapsing dedup relies on Windows normcase; POSIX filesystems (incl. macOS CI) are case-sensitive",
 )
 def test_scan_case_insensitive_dedup(tmp_path: Path) -> None:
-    """On case-insensitive filesystems (Windows/macOS default), differently-cased
-    spellings of one file must collapse to a single entry (the canonical one).
-    On Linux the three spellings are genuinely distinct files, so the test is
-    skipped there."""
+    """Windows-only: the GUI's input scan collapses differently-cased spellings
+    of one file (os.path.normcase lowercases on Windows). On case-sensitive
+    filesystems -- Linux and the macOS CI runner's APFS volume -- the three
+    spellings are distinct files, so the contract only applies on Windows."""
     p = tmp_path / "Photo.png"
     p.write_bytes(b"x")
     scanned = gui_app.scan_paths([tmp_path / "photo.png", tmp_path / "PHOTO.PNG", p, str(p)])
