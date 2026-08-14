@@ -355,7 +355,15 @@ def test_close_during_first_file_completes_current_and_cancels_rest(
 # ── Background scanning (BUG-09 / BUG-10 / 5.7) ───────────────────────────
 
 
+@pytest.mark.skipif(
+    sys.platform == "linux",
+    reason="dedup relies on case-insensitive filesystem semantics (normcase is a no-op on POSIX)",
+)
 def test_scan_case_insensitive_dedup(tmp_path: Path) -> None:
+    """On case-insensitive filesystems (Windows/macOS default), differently-cased
+    spellings of one file must collapse to a single entry (the canonical one).
+    On Linux the three spellings are genuinely distinct files, so the test is
+    skipped there."""
     p = tmp_path / "Photo.png"
     p.write_bytes(b"x")
     scanned = gui_app.scan_paths([tmp_path / "photo.png", tmp_path / "PHOTO.PNG", p, str(p)])
@@ -553,14 +561,34 @@ def test_png_xmp_chunk_is_ai_related_and_not_verified(tmp_path: Path) -> None:
 # ── Batch epoch: stale queue messages must never bleed into the next batch ──
 
 
+class _FakeRoot:
+    """Minimal Tk-free stand-in for the root window used by the harness."""
+
+    def withdraw(self) -> None:  # pragma: no cover - trivial
+        pass
+
+    def destroy(self) -> None:  # pragma: no cover - trivial
+        pass
+
+
+class _FakeVar:
+    """StringVar stand-in holding a value, without a Tk root."""
+
+    def __init__(self, value: str = "") -> None:
+        self._value = value
+
+    def set(self, value: str) -> None:
+        self._value = value
+
+    def get(self) -> str:
+        return self._value
+
+
 class _UiHarness:
-    """Tk-free stand-in for App's queue-consuming half, with a real Tk root."""
+    """Tk-free stand-in for App's queue-consuming half."""
 
     def __init__(self) -> None:
-        from tkinter import Tk
-
-        self.root = Tk()
-        self.root.withdraw()
+        self.root = _FakeRoot()
         self.log_q: queue.Queue[str] = queue.Queue()
         self.batch_epoch = 1
         self.busy = False
@@ -569,6 +597,7 @@ class _UiHarness:
         self._done_epochs: list[int] = []
         self._resultee: list[tuple[int, int, str]] = []
         self._after_ok = True
+        self.status: _FakeVar = _FakeVar()
 
     def _is_current_epoch(self, epoch: int) -> bool:
         return epoch == self.batch_epoch
