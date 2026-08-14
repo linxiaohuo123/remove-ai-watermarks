@@ -1039,8 +1039,11 @@ class App:
         )
         self.var_remove_all_meta = StringVar(value="0")
         ttk.Checkbutton(
-            opts, text="清除普通元数据(作者/标题等)",
-            variable=self.var_remove_all_meta, onvalue="1", offvalue="0",
+            opts,
+            text="清除普通元数据(作者/标题等)",
+            variable=self.var_remove_all_meta,
+            onvalue="1",
+            offvalue="0",
         ).pack(side=LEFT, padx=8)
 
         # 区域擦除: 固定区域批量擦除 (x,y,w,h 逗号分隔). 留空=不擦除.
@@ -1325,10 +1328,7 @@ class App:
 
     def _update_counts_label(self) -> None:
         c = self._counts
-        text = (
-            f"成功 {c['success']} · 警告 {c['warning']} · "
-            f"失败 {c['failed']} · 取消 {c['cancelled']} / {self._total}"
-        )
+        text = f"成功 {c['success']} · 警告 {c['warning']} · 失败 {c['failed']} · 取消 {c['cancelled']} / {self._total}"
         self.counts_label.configure(text=text)
 
     def _apply_result_line(self, idx: int, status: str) -> None:

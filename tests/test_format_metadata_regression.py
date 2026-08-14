@@ -17,6 +17,9 @@ import pytest
 from PIL import Image, ImageOps
 from PIL.PngImagePlugin import PngInfo
 
+# The GUI under test is a Tk application; CI Python ships no tkinter.
+pytest.importorskip("tkinter")
+
 _SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
